@@ -1,0 +1,25 @@
+﻿Build started 11/25/2016 10:24:53 AM.
+     1>Project "C:\Users\Victor\Downloads\a4\a4.vcxproj" on node 2 (Build target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\CL.exe /c /Zi /nologo /W3 /WX- /O2 /Oi /Oy- /GL /D WIN32 /D NDEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"build\Release\\" /Fd"build\Release\vc140.pdb" /Gd /TP /analyze- /errorReport:prompt main.cpp object.cpp parser.cpp raytracer.cpp
+         main.cpp
+     1>main.cpp(35): warning C4101: 'raytracer': unreferenced local variable
+         object.cpp
+         parser.cpp
+         raytracer.cpp
+     1>c:\users\victor\downloads\a4\image.hpp(72): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+         C:\Program Files (x86)\Windows Kits\10\Include\10.0.10150.0\ucrt\stdio.h(205): note: see declaration of 'fopen'
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\Victor\Downloads\a4\a4.exe" /INCREMENTAL:NO /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /Debug /PDB:"C:\Users\Victor\Downloads\a4\a4.pdb" /SUBSYSTEM:CONSOLE /OPT:REF /OPT:ICF /LTCG:incremental /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\Victor\Downloads\a4\a4.lib" /MACHINE:X86 /SAFESEH build\Release\main.obj
+         build\Release\object.obj
+         build\Release\parser.obj
+         build\Release\raytracer.obj
+         Generating code
+         All 1391 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+         Finished generating code
+         a4.vcxproj -> C:\Users\Victor\Downloads\a4\a4.exe
+     1>Done Building Project "C:\Users\Victor\Downloads\a4\a4.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:06.75
