@@ -106,9 +106,12 @@ bool Plane::localIntersect(Ray const &ray, Intersection &hit) const
 	// NOTE: hit.depth is the current closest intersection depth, so don't
 	// accept any intersection that happens further away than that.
 
-	if (ray.origin[1] < 0) return false; // inside plane
+	//if (ray.origin[1] < 0) return false; // inside plane
 
-	//double t = -ray.origin[2] / ray.direction[2];
+	double t = -ray.origin[2] / ray.direction[2];
+
+	if (t < 0) return false;
+	if (t > hit.depth) return false;
 	//if (double depth = ray.origin[2] + t*ray.direction[2] < hit.depth) {
 	//	// hit.depth = depth;
 	//	hit.position = ray.origin + t*ray.direction;

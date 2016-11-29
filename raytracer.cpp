@@ -15,6 +15,8 @@
 
 // 2016 Version
 
+#define EPSILON 0.0000000000000001
+
 void Raytracer::render(const char *filename, const char *depth_filename, Scene const &scene)
 {
     // Allocate the two images that will ultimately be saved.
@@ -173,9 +175,9 @@ Vector Raytracer::shade(Ray const &ray, int &ray_depth, Intersection const &inte
 	//!!! USEFUL NOTES: attenuate factor = 1.0 / (a0 + a1 * d + a2 * d * d)..., ambient light doesn't attenuate, nor does it affected by shadow
 	//!!! USEFUL NOTES: don't accept shadow intersection far away than the light position
 	//!!! USEFUL NOTES: for each kind of ray, i.e. shadow ray, reflected ray, and primary ray, the accepted furthest depth are different
-	Vector diffuse(0);
+	Vector diffuse = material.diffuse;
 	Vector ambient = material.ambient;
-	Vector specular(0);		
+	Vector specular = material.specular;		
 	for (auto lightIter = scene.lights.begin(); lightIter != scene.lights.end(); lightIter++)
 	{
 		//////////////////
@@ -185,6 +187,19 @@ Vector Raytracer::shade(Ray const &ray, int &ray_depth, Intersection const &inte
 		// intersects the scene.
 		// After you finished, you will be able to get the colored resulting image with local illumination, just like in programming assignment 3.
 
+
+		// DIFFUSE
+		Vector &vecToLight = (Vector(lightIter->position) - intersection.position).normalized();
+		double lightOn = std::fmax(vecToLight.dot(intersection.normal.normalized()), 0.0);
+		diffuse = diffuse * lightOn;
+
+		// SPECULAR
+
+		Vector &viewPositionNorm = Vector(intersection.position).normalized();
+		Vector &h = Vector(viewPositionNorm + vecToLight).normalized();
+		double dotFactor = std::fmax(h.dot(intersection.normal.normalized()), 0.0);
+		double powDotFactor = std::pow(dotFactor, material.shininess);
+		specular = specular * powDotFactor;
 
 		//////////////////
 		// YOUR CODE HERE 
