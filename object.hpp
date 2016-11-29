@@ -25,10 +25,12 @@ public:
 
 	void init(ParamList &params)
 	{
-		#define SET_VECTOR(_name) _name = params[#_name];
-		SET_VECTOR(ambientColor)
-		SET_VECTOR(diffuseColor)
-		SET_VECTOR(specularColor)
+		#define SET_VECTOR(_name) _name = params[#_name];	
+// !!!!! edited lines start
+		SET_VECTOR(ambient)
+		SET_VECTOR(diffuse)
+		SET_VECTOR(specular)
+// !!!!! edited lines end
 		SET_VECTOR(emission)
 
 		#define SET_FLOAT(_name) _name = params[#_name].size() ? params[#_name][0] : 0;
@@ -37,10 +39,12 @@ public:
 		SET_FLOAT(reflect)
 	}
 
-	// Ambient/diffuse/specular/emissive colors.
-	Vector ambientColor;
-	Vector diffuseColor;
-	Vector specularColor;
+	// Ambient/diffuse/specular/emissive colors. 
+// !!!!! edited lines start
+	Vector ambient;
+	Vector diffuse;
+	Vector specular;	   
+// !!!!! edited lines end
 	Vector emission;
 
 	// "Shininess" factor (specular exponent).

@@ -22,19 +22,23 @@ public:	// Constructors
 	// Initialize the light's attributes from the given parameter list.
 	void init(ParamList &params)
 	{
-		#define SET_VECTOR(_name) _name = params[#_name];
-		SET_VECTOR(ambientColor)
-		SET_VECTOR(diffuseColor)
-		SET_VECTOR(specularColor)
+		#define SET_VECTOR(_name) _name = params[#_name];	   
+// !!!!  edited lines start
+		SET_VECTOR(ambient)
+		SET_VECTOR(diffuse)
+		SET_VECTOR(specular)
+// !!!! edited lines end
 		SET_VECTOR(attenuation)
 	}
 
 	Vector position; // Light position
 
-	// Ambient, diffuse, and specular light colors.
-	Vector ambientColor;
-	Vector diffuseColor;
-	Vector specularColor;
+	// Ambient, diffuse, and specular light colors.	
+// !!!! edited lines start
+	Vector ambient;
+	Vector diffuse;
+	Vector specular;	  
+// !!!! edited lines end
 
 	// Attenuation coefficients type.
 	// attenuation[0] = CONSTANT

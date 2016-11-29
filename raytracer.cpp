@@ -34,6 +34,15 @@ void Raytracer::render(const char *filename, const char *depth_filename, Scene c
 	//!!! USEFUL NOTES: view plane can be anywhere, but it will be implemented differently,
 	//you can find references from the course slides 22_GlobalIllum.pdf
 
+	const Camera &cam = scene.camera;
+
+	double top =  tan(deg2rad(cam.fov / 2)) * cam.zNear;
+	double left = top * cam.aspect;
+
+	Vector &w = Vector(cam.center - cam.position).normalized(); // cam.position - cam.center;
+	Vector &v = Vector(cam.up);
+	Vector &u = Vector(w).cross(v);
+	Vector &originPoint = (cam.zNear * Vector(w)) - (left* Vector(u)) - (top * Vector(v));
 
     // Iterate over all the pixels in the image.
     for(int y = 0; y < scene.resolution[1]; y++) {
@@ -53,7 +62,9 @@ void Raytracer::render(const char *filename, const char *depth_filename, Scene c
 				// YOUR CODE HERE
 				// set primary ray using the camera parameters
 				//!!! USEFUL NOTES: all world coordinate rays need to have a normalized direction
-				
+				Vector &pixelPos = Vector((x + 0.5)*(2* left / scene.resolution[0])*u + (y + 0.5)*(2 * top / scene.resolution[1])*v) + originPoint;
+				ray = Ray(cam.position, (pixelPos).normalized());
+
 			}
 
             // Initialize recursive ray depth.
@@ -130,6 +141,17 @@ bool Raytracer::trace(Ray const &ray, int &ray_depth, Scene const &scene, Vector
 		// YOUR CODE HERE
 		// Note that for Object::intersect(), the parameter hit is the current hit
 		// your intersect() should be implemented to exclude intersection far away than hit.depth
+		Intersection intersection;
+
+
+		for (int i = 0; i < scene.objects.size(); i++) {
+			const Object *obj = scene.objects[i];
+			
+			if (obj->intersect(ray, intersection)) {
+				rayOutColor = shade(ray, ray_depth, intersection, obj->material, scene);
+				depth = intersection.depth;
+			}
+		}
 		
 	}
 
@@ -151,9 +173,9 @@ Vector Raytracer::shade(Ray const &ray, int &ray_depth, Intersection const &inte
 	//!!! USEFUL NOTES: attenuate factor = 1.0 / (a0 + a1 * d + a2 * d * d)..., ambient light doesn't attenuate, nor does it affected by shadow
 	//!!! USEFUL NOTES: don't accept shadow intersection far away than the light position
 	//!!! USEFUL NOTES: for each kind of ray, i.e. shadow ray, reflected ray, and primary ray, the accepted furthest depth are different
-	Vector diffuseColor(0);
-	Vector ambientColor(0);
-	Vector specularColor(0);
+	Vector diffuse(0);
+	Vector ambient = material.ambient;
+	Vector specular(0);		
 	for (auto lightIter = scene.lights.begin(); lightIter != scene.lights.end(); lightIter++)
 	{
 		//////////////////
@@ -191,6 +213,7 @@ Vector Raytracer::shade(Ray const &ray, int &ray_depth, Intersection const &inte
 		// calculate reflected color using trace() recursively
 		
 	}
-
-	return material.emission + ambientColor + diffuseColor + specularColor + material.reflect * reflectedLight;
+	// !!!! edited line starts
+	return material.emission + ambient + diffuse + specular + material.reflect * reflectedLight;  
+	// !!!! edited line ends
 }
