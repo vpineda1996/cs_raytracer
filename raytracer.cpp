@@ -42,8 +42,8 @@ void Raytracer::render(const char *filename, const char *depth_filename, Scene c
 	double left = top * cam.aspect;
 
 	Vector &w = Vector(cam.center - cam.position).normalized(); // cam.position - cam.center;
-	Vector &v = Vector(cam.up);
-	Vector &u = Vector(w).cross(v);
+	Vector &v = Vector(cam.up).normalized();
+	Vector &u = Vector(w).cross(v).normalized();
 	Vector &originPoint = (cam.zNear * Vector(w)) - (left* Vector(u)) - (top * Vector(v));
 
     // Iterate over all the pixels in the image.
@@ -73,7 +73,7 @@ void Raytracer::render(const char *filename, const char *depth_filename, Scene c
             int ray_depth = 0;
            
             // Our recursive raytrace will compute the color and the z-depth
-            Vector color;
+            Vector color(0);
 
             // This should be the maximum depth, corresponding to the far plane.
             // NOTE: This assumes the ray direction is unit-length and the
@@ -144,16 +144,20 @@ bool Raytracer::trace(Ray const &ray, int &ray_depth, Scene const &scene, Vector
 		// Note that for Object::intersect(), the parameter hit is the current hit
 		// your intersect() should be implemented to exclude intersection far away than hit.depth
 		Intersection intersection;
-
+		intersection.depth = depth;
+		Vector finalColor = NULL;
+		double tmpDepth = intersection.depth;
 
 		for (int i = 0; i < scene.objects.size(); i++) {
 			const Object *obj = scene.objects[i];
 			
 			if (obj->intersect(ray, intersection)) {
-				rayOutColor = shade(ray, ray_depth, intersection, obj->material, scene);
-				depth = intersection.depth;
+				finalColor = shade(ray, ray_depth, intersection, obj->material, scene);
+				tmpDepth = intersection.depth;
 			}
 		}
+		if (finalColor != NULL) rayOutColor = finalColor;
+		depth = tmpDepth;
 		
 	}
 
@@ -175,31 +179,56 @@ Vector Raytracer::shade(Ray const &ray, int &ray_depth, Intersection const &inte
 	//!!! USEFUL NOTES: attenuate factor = 1.0 / (a0 + a1 * d + a2 * d * d)..., ambient light doesn't attenuate, nor does it affected by shadow
 	//!!! USEFUL NOTES: don't accept shadow intersection far away than the light position
 	//!!! USEFUL NOTES: for each kind of ray, i.e. shadow ray, reflected ray, and primary ray, the accepted furthest depth are different
-	Vector diffuse = material.diffuse;
-	Vector ambient = material.ambient;
-	Vector specular = material.specular;		
+	Vector diffuse(0);
+	Vector ambient(0);
+	Vector specular(0);
+	Vector normNormalized = Vector(intersection.normal).normalized();
+	Vector intesectionPosition = Vector(intersection.position);
+
 	for (auto lightIter = scene.lights.begin(); lightIter != scene.lights.end(); lightIter++)
 	{
+		Vector lightPos = Vector(lightIter->position);
 		//////////////////
 		// YOUR CODE HERE 
 		// First you can assume all the light sources are directly visible. You should calculate the ambient, diffuse, 
 		// and specular terms.You should think of this part in terms of determining the color at the point where the ray 
 		// intersects the scene.
 		// After you finished, you will be able to get the colored resulting image with local illumination, just like in programming assignment 3.
-
-
+		
 		// DIFFUSE
-		Vector &vecToLight = (Vector(lightIter->position) - intersection.position).normalized();
-		double lightOn = std::fmax(vecToLight.dot(intersection.normal.normalized()), 0.0);
-		diffuse = diffuse * lightOn;
+		Vector vecToLight = Vector(lightPos - intesectionPosition).normalized();
+		double lightOn = std::fmax(vecToLight.dot(normNormalized), 0.0);
+		Vector tmpDiff = Vector(material.diffuse) * lightIter->diffuse * lightOn;
 
 		// SPECULAR
 
-		Vector &viewPositionNorm = Vector(intersection.position).normalized();
-		Vector &h = Vector(viewPositionNorm + vecToLight).normalized();
-		double dotFactor = std::fmax(h.dot(intersection.normal.normalized()), 0.0);
+		Vector viewPositionNorm = Vector(scene.camera.position.normalized() - intesectionPosition).normalized();
+		Vector h = Vector(viewPositionNorm + vecToLight).normalized();
+		double dotFactor = std::fmax(h.dot(normNormalized), 0.0);
 		double powDotFactor = std::pow(dotFactor, material.shininess);
-		specular = specular * powDotFactor;
+		Vector tmpSpec = Vector(material.specular) * lightIter->specular * powDotFactor;
+		
+		
+		Ray shadeRay = Ray(intersection.position - ray.direction*1e-9, vecToLight);
+		Intersection shadInter;
+		bool hasIntersected = false;
+		for (int i = 0; i < scene.objects.size(); i++) {
+			const Object *obj = scene.objects[i];
+
+			if (obj->intersect(shadeRay, shadInter)) {
+				tmpDiff = tmpDiff * (1. - material.shadow);
+				tmpSpec = tmpSpec * (1. - material.shadow);
+				break;
+			}
+		}
+
+		double distToLight = (lightPos - intesectionPosition).length();
+		double att = lightIter->attenuation[0] + lightIter->attenuation[1] * (distToLight) + lightIter->attenuation[2] * (distToLight) * (distToLight);
+
+		diffuse += tmpDiff * 1 / att;
+		specular += tmpSpec * 1 / att;
+		ambient += Vector(material.ambient) * lightIter->ambient;
+		
 
 		//////////////////
 		// YOUR CODE HERE 
@@ -226,6 +255,14 @@ Vector Raytracer::shade(Ray const &ray, int &ray_depth, Intersection const &inte
 		//////////////////
 		// YOUR CODE HERE 
 		// calculate reflected color using trace() recursively
+
+		Vector color;
+		Vector reflectedDirection = (-2 * Vector(ray.direction).dot(normNormalized)*normNormalized) + Vector(ray.direction);
+
+		Ray recursiveRay = Ray(intersection.position - ray.direction*1e-9 , reflectedDirection);
+		double depth = 1e10;
+		trace(recursiveRay, ray_depth, scene, color, depth);
+		reflectedLight = color;
 		
 	}
 	// !!!! edited line starts

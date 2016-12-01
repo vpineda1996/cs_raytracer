@@ -106,20 +106,21 @@ bool Plane::localIntersect(Ray const &ray, Intersection &hit) const
 	// NOTE: hit.depth is the current closest intersection depth, so don't
 	// accept any intersection that happens further away than that.
 
-	//if (ray.origin[1] < 0) return false; // inside plane
+	Vector normal = Vector(0, 0, 1, 1);
 
-	double t = -ray.origin[2] / ray.direction[2];
-
+	if (std::abs(normal.dot(ray.direction)) < 0.00001) return false;
+	
+	double t = -normal.dot(ray.origin) / normal.dot(ray.direction);
 	if (t < 0) return false;
 	if (t > hit.depth) return false;
-	//if (double depth = ray.origin[2] + t*ray.direction[2] < hit.depth) {
-	//	// hit.depth = depth;
-	//	hit.position = ray.origin + t*ray.direction;
-	//	hit.normal = Vector(0, 1, 0);
-	//	return true;
-	//}
 
-    return false;
+	Vector newPosition = Vector(ray.origin) + t*Vector(ray.direction);
+
+	hit.position = newPosition;
+	hit.normal = normal.normalized();
+	hit.depth = t;
+
+	return true;
 }
 
 bool Mesh::intersectTriangle(Ray const &ray, Triangle const &tri, Intersection &hit) const
@@ -129,23 +130,61 @@ bool Mesh::intersectTriangle(Ray const &ray, Triangle const &tri, Intersection &
 	Vector const &p1 = positions[tri[1].pi];
 	Vector const &p2 = positions[tri[2].pi];
 
-	// First calculate plane for triange
+	Vector    u, v, n;              // triangle vectors
+	Vector    dir, w0, w;           // ray vectors
+	double     r, a, b;              // params to calc ray-plane intersect
 
-	Vector &normalToPlane = (p2 - p0).cross(p1 - p0);
-	double t = (p0 - ray.origin).dot(normalToPlane) / (ray.origin.dot(normalToPlane));
+									// get triangle edge vectors and plane normal
+	u = p1 - p0;
+	v = p2 - p0;
+	n = u.cross(v);              // cross product
+	if (n == Vector(0))            // triangle is degenerate
+		return false;                  // do not deal with this case
 
-	Vector &point = ray.origin + t*ray.direction;
-
-	double sign0 = implicitLineEquation(point[0], point[1], p0[0], p0[1], p1[0], p1[1]);
-	double sign1 = implicitLineEquation(point[0], point[1], p0[0], p0[1], p2[0], p2[1]);
-	double sign2 = implicitLineEquation(point[0], point[1], p2[0], p2[1], p1[0], p1[1]);
-
-	if ((sign0 >= 0 && sign1 >= 0 && sign2 >= 0) || (sign0 <= 0 && sign1 <= 0 && sign2 <= 0) && normalToPlane.dot(ray.direction) < 0 && hit.depth < point[2]) {
-		hit.position = point;
-		hit.depth = point[2];
-		hit.normal = normalToPlane;
-		return false;
+	dir = ray.direction;              // ray direction vector
+	w0 = ray.origin - Vector(p0);
+	a = -n.dot(w0);
+	b = n.dot(dir);
+	if (fabs(b) < 0.000001) {     // ray is  parallel to triangle plane
+		if (a == 0)                 // ray lies in triangle plane
+			return 2;
+		else return 0;              // ray disjoint from plane
 	}
+
+	// get intersect point of ray with triangle plane
+	r = a / b;
+	if (r < 0.0)                    // ray goes away from triangle
+		return 0;                   // => no intersect
+									// for a segment, also test if (r > 1.0) => no intersect
+
+	if (r > hit.depth) return false;
+	Vector intersection = Vector(ray.origin) + r * dir;            // intersect point of ray and plane
+
+									// is I inside T?
+	double    uu, uv, vv, wu, wv, D;
+	uu = u.dot(u);
+	uv = u.dot(v);
+	vv = v.dot(v);
+	w = intersection - p0;
+	wu = w.dot(u);
+	wv = w.dot(v);
+	D = uv * uv - uu * vv;
+
+	// get and test parametric coords
+	float s, t;
+	s = (uv * wv - vv * wu) / D;
+	if (s < 0.0 || s > 1.0)         // I is outside T
+		return false;
+	t = (uv * wu - uu * wv) / D;
+	if (t < 0.0 || (s + t) > 1.0)  // I is outside T
+		return false;
+	// update intersection
+
+	hit.depth = r;
+	hit.position = intersection;
+	hit.normal = n.normalized();
+
+	return true;                       // I is in T
 
 	//////////////////
 	// YOUR CODE HERE 
