@@ -1,6 +1,6 @@
    
 CC = g++ 
-CFLAGS = -g -c -Wall -pedantic -Wextra -Wno-unused-parameter
+CFLAGS = -g -c -Wall -pedantic -Wextra -Wno-unused-parameter -fopenmp
 LDFLAGS = -std=c++11
 # LDFLAGS =
 

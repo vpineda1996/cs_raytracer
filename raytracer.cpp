@@ -12,14 +12,17 @@
 #include <sstream>
 #include "raytracer.hpp"
 #include "image.hpp"
+#include <omp.h>
 
 // 2016 Version
 
-#define EPSILON 0.0000000000000001
+#define EPSILON 1e-6
+#define ANTIALIASRES 8
 
 void Raytracer::render(const char *filename, const char *depth_filename, Scene const &scene)
 {
     // Allocate the two images that will ultimately be saved.
+
     Image colorImage(scene.resolution[0], scene.resolution[1]);
     Image depthImage(scene.resolution[0], scene.resolution[1]);
     
@@ -47,50 +50,54 @@ void Raytracer::render(const char *filename, const char *depth_filename, Scene c
 	Vector &originPoint = (cam.zNear * Vector(w)) - (left* Vector(u)) - (top * Vector(v));
 
     // Iterate over all the pixels in the image.
+	#pragma omp parallel
+	#pragma omp for
     for(int y = 0; y < scene.resolution[1]; y++) {
-        for(int x = 0; x < scene.resolution[0]; x++) {
+		for (int x = 0; x < scene.resolution[0]; x++) {
+			std::vector<Vector> colors;
+			double minDepth = scene.camera.zFar;
+			for (int a = 0; a < ANTIALIASRES; a++) {
+				// Generate the appropriate ray for this pixel
+				Ray ray;
+				if (scene.objects.empty())
+				{
+					ray = Ray(scene.camera.position, (Vector(-320, -320, 640) + Vector(x + 0.5, y + 0.5, 0) - scene.camera.position).normalized());
+				}
+				else
+				{
+					double xrand = double(rand() % 100) / 100, yrand = double(rand() % 100) / 100;
+					Vector &pixelPos = Vector((x + xrand)*(2 * left / scene.resolution[0])*u + (y + yrand )*(2 * top / scene.resolution[1])*v) + originPoint;
+					ray = Ray(cam.position, (pixelPos).normalized());
+				}
 
-            // Generate the appropriate ray for this pixel
-			Ray ray;
-			if (scene.objects.empty())
-			{
-				//no objects in the scene, then we render the default scene:
-				//in the default scene, we assume the view plane is at z = 640 with width and height both 640
-				ray = Ray(scene.camera.position, (Vector(-320, -320, 640) + Vector(x + 0.5, y + 0.5, 0) - scene.camera.position).normalized());
+				// Initialize recursive ray depth.
+				int ray_depth = 0;
+				// Our recursive raytrace will compute the color and the z-depth
+				Vector color(0);
+
+				// This should be the maximum depth, corresponding to the far plane.
+				// NOTE: This assumes the ray direction is unit-length and the
+				// ray origin is at the camera position.
+				double depth = scene.camera.zFar;
+
+				// Calculate the pixel value by shooting the ray into the scene
+				trace(ray, ray_depth, scene, color, depth);
+				if (depth < minDepth) minDepth = depth;
+				colors.push_back(color);
 			}
-			else
-			{
-				//////////////////
-				// YOUR CODE HERE
-				// set primary ray using the camera parameters
-				//!!! USEFUL NOTES: all world coordinate rays need to have a normalized direction
-				Vector &pixelPos = Vector((x + 0.5)*(2* left / scene.resolution[0])*u + (y + 0.5)*(2 * top / scene.resolution[1])*v) + originPoint;
-				ray = Ray(cam.position, (pixelPos).normalized());
-
+			Vector color(0);
+			for (auto colorIt = colors.begin(); colorIt != colors.end(); colorIt++) {
+				color += *colorIt * 1 / colors.size();
 			}
-
-            // Initialize recursive ray depth.
-            int ray_depth = 0;
-           
-            // Our recursive raytrace will compute the color and the z-depth
-            Vector color(0);
-
-            // This should be the maximum depth, corresponding to the far plane.
-            // NOTE: This assumes the ray direction is unit-length and the
-            // ray origin is at the camera position.
-            double depth = scene.camera.zFar;
-
-            // Calculate the pixel value by shooting the ray into the scene
-            trace(ray, ray_depth, scene, color, depth);
 
             // Depth test
-            if(depth >= scene.camera.zNear && depth <= scene.camera.zFar && 
-                depth < zBuffer[x + y*scene.resolution[0]]) {
-                zBuffer[x + y*scene.resolution[0]] = depth;
+            if(minDepth >= scene.camera.zNear && minDepth <= scene.camera.zFar &&
+				minDepth < zBuffer[x + y*scene.resolution[0]]) {
+                zBuffer[x + y*scene.resolution[0]] = minDepth;
 
                 // Set the image color (and depth)
                 colorImage.setPixel(x, y, color);
-                depthImage.setPixel(x, y, (depth-scene.camera.zNear) / 
+                depthImage.setPixel(x, y, (minDepth -scene.camera.zNear) /
                                         (scene.camera.zFar-scene.camera.zNear));
             }
         }
@@ -209,20 +216,22 @@ Vector Raytracer::shade(Ray const &ray, int &ray_depth, Intersection const &inte
 		Vector tmpSpec = Vector(material.specular) * lightIter->specular * powDotFactor;
 		
 		
-		Ray shadeRay = Ray(intersection.position - ray.direction*1e-9, vecToLight);
+		Ray shadeRay = Ray(intersection.position - ray.direction*EPSILON, vecToLight);
+		double distToLight = (lightPos - intesectionPosition).length();
 		Intersection shadInter;
 		bool hasIntersected = false;
+		
+		shadInter.depth = distToLight;
+		
 		for (int i = 0; i < scene.objects.size(); i++) {
 			const Object *obj = scene.objects[i];
 
 			if (obj->intersect(shadeRay, shadInter)) {
 				tmpDiff = tmpDiff * (1. - material.shadow);
 				tmpSpec = tmpSpec * (1. - material.shadow);
-				break;
 			}
 		}
 
-		double distToLight = (lightPos - intesectionPosition).length();
 		double att = lightIter->attenuation[0] + lightIter->attenuation[1] * (distToLight) + lightIter->attenuation[2] * (distToLight) * (distToLight);
 
 		diffuse += tmpDiff * 1 / att;
@@ -259,7 +268,7 @@ Vector Raytracer::shade(Ray const &ray, int &ray_depth, Intersection const &inte
 		Vector color;
 		Vector reflectedDirection = (-2 * Vector(ray.direction).dot(normNormalized)*normNormalized) + Vector(ray.direction);
 
-		Ray recursiveRay = Ray(intersection.position - ray.direction*1e-9 , reflectedDirection);
+		Ray recursiveRay = Ray(intersection.position - ray.direction * EPSILON, reflectedDirection);
 		double depth = 1e10;
 		trace(recursiveRay, ray_depth, scene, color, depth);
 		reflectedLight = color;

@@ -22,8 +22,8 @@ Material "red"
     "specular"  [1.0 1.0 1.0]
     "emission"  [0.0 0.0 0.0]
     "shininess" 500.0 # specular exponent
-    "shadow"    0.7 # shadow factor [0 = no shadow, 1= black shadow, 0..1 added to surface color]
-    "reflect"   0.8 # reflection factor [0 = no reflection, 1=full reflection, 0..1 added to surface color]
+    "shadow"    0 # shadow factor [0 = no shadow, 1= black shadow, 0..1 added to surface color]
+    "reflect"   1 # reflection factor [0 = no reflection, 1=full reflection, 0..1 added to surface color]
 
 # Moderately reflective shiny pink
 Material "pink"
@@ -32,7 +32,7 @@ Material "pink"
     "specular"  [1.0 1.0 1.0]
     "emission"  [0.0 0.0 0.0]
     "shininess" 80.0
-    "shadow"    0.2
+    "shadow"    0.0
     "reflect"   0.3
 
 # Diffuse white
@@ -42,7 +42,7 @@ Material "white1"
     "specular"  [0.1 0.1 0.1]
     "emission"  [0.0 0.0 0.0]
     "shininess" 10.0
-    "shadow"    1
+    "shadow"    0
     "reflect"   0
 
 # Somewhat shiny orange
@@ -52,7 +52,7 @@ Material "orange"
     "specular"  [1.0 1.0 1.0]
     "emission"  [0.0 0.0 0.0]
     "shininess" 100.0
-    "shadow"    0.8
+    "shadow"    0.0
     "reflect"   0
 
 # Somewhat shiny blue.
@@ -62,7 +62,7 @@ Material "blue"
     "specular"  [0.5 0.5 0.5]
     "emission"  [0.0 0.0 0.0]
     "shininess" 25.0
-    "shadow"    0.8
+    "shadow"    0.0
     "reflect"   0.2
 
 # Highly diffuse white
@@ -72,7 +72,7 @@ Material "white"
     "specular"  [0 0 0]
     "emission"  [0 0 0]
     "shininess" 0.0
-    "shadow"    1
+    "shadow"    0
     "reflect"   0.0
 
 

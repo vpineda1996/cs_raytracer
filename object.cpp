@@ -105,8 +105,9 @@ bool Plane::localIntersect(Ray const &ray, Intersection &hit) const
 	//
 	// NOTE: hit.depth is the current closest intersection depth, so don't
 	// accept any intersection that happens further away than that.
-
-	Vector normal = Vector(0, 0, 1, 1);
+	
+	Vector normal = Vector(0, 0, 1, 0);
+	if (ray.origin[2] < 0) normal += -1;
 
 	if (std::abs(normal.dot(ray.direction)) < 0.00001) return false;
 	
