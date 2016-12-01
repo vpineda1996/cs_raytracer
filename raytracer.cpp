@@ -44,10 +44,10 @@ void Raytracer::render(const char *filename, const char *depth_filename, Scene c
 	double top =  tan(deg2rad(cam.fov / 2)) * cam.zNear;
 	double left = top * cam.aspect;
 
-	Vector &w = Vector(cam.center - cam.position).normalized(); // cam.position - cam.center;
-	Vector &v = Vector(cam.up).normalized();
-	Vector &u = Vector(w).cross(v).normalized();
-	Vector &originPoint = (cam.zNear * Vector(w)) - (left* Vector(u)) - (top * Vector(v));
+	Vector w = Vector(cam.center - cam.position).normalized(); // cam.position - cam.center;
+	Vector v = Vector(cam.up).normalized();
+	Vector u = Vector(w).cross(v).normalized();
+	Vector originPoint = (cam.zNear * Vector(w)) - (left* Vector(u)) - (top * Vector(v));
 
     // Iterate over all the pixels in the image.
 	#pragma omp parallel
@@ -66,7 +66,7 @@ void Raytracer::render(const char *filename, const char *depth_filename, Scene c
 				else
 				{
 					double xrand = double(rand() % 100) / 100, yrand = double(rand() % 100) / 100;
-					Vector &pixelPos = Vector((x + xrand)*(2 * left / scene.resolution[0])*u + (y + yrand )*(2 * top / scene.resolution[1])*v) + originPoint;
+					Vector pixelPos = Vector((x + xrand)*(2 * left / scene.resolution[0])*u + (y + yrand )*(2 * top / scene.resolution[1])*v) + originPoint;
 					ray = Ray(cam.position, (pixelPos).normalized());
 				}
 
