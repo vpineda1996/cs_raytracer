@@ -237,25 +237,6 @@ Vector Raytracer::shade(Ray const &ray, int &ray_depth, Intersection const &inte
 		diffuse += tmpDiff * 1 / att;
 		specular += tmpSpec * 1 / att;
 		ambient += Vector(material.ambient) * lightIter->ambient;
-		
-
-		//////////////////
-		// YOUR CODE HERE 
-		// Emit the shadow ray from a point you're computing direct illumination for to determine which lights 
-		// are contributing to the lighting at that point.Be careful to exclude the origin of the ray from the 
-		// intersection points, but do remember that the intersection points could be other points on the same 
-		// object if the object is not convex(for example, a teapot).
-		// For points in the shadow, scale their original lighting color by the factor  (1 - material.shadow)
-
-
-		//////////////////
-		// YOUR CODE HERE 
-		// Use the ray_depth recursion depth variable to stop the recursion process. (The default used in the solution is 10.) 
-		// Update the lighting computation at each step to account for the secondary component.
-		// You can think of this part as an extended shadow ray calculation, recursively iterating to determine contributing 
-		// light(and weighting newly determined light sources into the original pixel).
-
-		
 	}
 
 	Vector reflectedLight(0);

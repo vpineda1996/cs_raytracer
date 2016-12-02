@@ -186,25 +186,50 @@ bool Mesh::intersectTriangle(Ray const &ray, Triangle const &tri, Intersection &
 	hit.normal = n.normalized();
 
 	return true;                       // I is in T
-
-	//////////////////
-	// YOUR CODE HERE 
-	// Think back through the course and try to decide what equations might help you decide on which 
-	// side of the bounding lines of the triangle the ray intersects.
-	// Test this part just like the above two parts; when triangle intersection is working properly, 
-	// you should be able to see full meshes appear in your scenes.
-	//
-	// NOTE: hit.depth is the current closest intersection depth, so don't
-	// accept any intersection that happens further away than that.
-	//!!! USEFUL NOTES: for the intersection point, its normal should satisfy hit.normal.dot(ray.direction) < 0
-
-	return false;
 }
 
 bool Conic::localIntersect(Ray const &ray, Intersection &hit) const {
 	//////////////////
 	// YOUR CODE HERE (creative license)
-    return false;
+	Vector f = Vector(1,-1,1) * ray.direction;
+	Vector g = ray.origin;
+	double h = this->zMax - this->zMin;
+
+	Vector raydirSq = f*f;
+	double a = raydirSq.dot(Vector(1,-1,1));
+	double b = 2 * f.dot(g) + 2*h* ray.direction[1]; 
+	Vector rayOrigSq = ray.origin * ray.origin;
+	double c = rayOrigSq[0] - rayOrigSq[1] + rayOrigSq[2]  - h*h + 2*h*ray.origin[1];
+
+
+	double d = b*b - 4 * a*c;
+
+	if (d <= 0) {
+		return false;
+	}
+
+
+	double sqrtd = sqrt(d);
+
+	double t1 = (-b + sqrtd) / (2 * a);
+	double t2 = (-b - sqrtd) / (2 * a);
+
+	if (t1 < 0 && t2 < 0) {
+		return false;
+	}
+
+	if (t1 > t2 && t2 > 0) std::swap(t1, t2);
+	const Vector &intersection = ray.origin + t1*ray.direction;
+
+	if (t1 > hit.depth || intersection[1] > h) {
+		return false;
+	}
+
+	hit.position = intersection;
+	hit.normal = (intersection).normalized();
+	hit.depth = t1;
+
+	return true;
 }
 
 
