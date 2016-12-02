@@ -60,7 +60,7 @@ bool Sphere::localIntersect(Ray const &ray, Intersection &hit) const
 
 	double a = ray.direction.dot(ray.direction);
 	double b = 2 * ray.direction.dot(ray.origin);
-	double c = ray.origin.dot(ray.origin) - this->radius;
+	double c = ray.origin.dot(ray.origin) - (this->radius* this->radius);
 
 	double d = b*b - 4 * a*c;
 
@@ -191,6 +191,7 @@ bool Mesh::intersectTriangle(Ray const &ray, Triangle const &tri, Intersection &
 bool Conic::localIntersect(Ray const &ray, Intersection &hit) const {
 	//////////////////
 	// YOUR CODE HERE (creative license)
+	return false;
 	
 	Vector yInv = Vector(1, -1, 1);
 	Vector f = Vector(yInv) * ray.direction;
