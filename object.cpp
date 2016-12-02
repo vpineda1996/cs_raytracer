@@ -191,15 +191,17 @@ bool Mesh::intersectTriangle(Ray const &ray, Triangle const &tri, Intersection &
 bool Conic::localIntersect(Ray const &ray, Intersection &hit) const {
 	//////////////////
 	// YOUR CODE HERE (creative license)
-	Vector f = Vector(1,-1,1) * ray.direction;
+	
+	Vector yInv = Vector(1, -1, 1);
+	Vector f = Vector(yInv) * ray.direction;
 	Vector g = ray.origin;
-	double h = this->zMax - this->zMin;
+	double h = this->radius2 * (this->zMax - this->zMin) / (this->radius2 - this->radius1) ;
 
 	Vector raydirSq = f*f;
-	double a = raydirSq.dot(Vector(1,-1,1));
-	double b = 2 * f.dot(g) + 2*h* ray.direction[1]; 
-	Vector rayOrigSq = ray.origin * ray.origin;
-	double c = rayOrigSq[0] - rayOrigSq[1] + rayOrigSq[2]  - h*h + 2*h*ray.origin[1];
+	double a = raydirSq.dot(Vector(yInv));
+	double b = 2 * f.dot(g) + 2*h * ray.direction[1];
+	Vector rayOrigSq = g*g;
+	double c = rayOrigSq.dot(Vector(yInv)) - (h*h - 2*h*ray.origin[1]);
 
 
 	double d = b*b - 4 * a*c;
@@ -221,12 +223,12 @@ bool Conic::localIntersect(Ray const &ray, Intersection &hit) const {
 	if (t1 > t2 && t2 > 0) std::swap(t1, t2);
 	const Vector &intersection = ray.origin + t1*ray.direction;
 
-	if (t1 > hit.depth || intersection[1] > h) {
+	if (t1 > hit.depth || intersection[1] > h  || intersection[1] < 0 ) {
 		return false;
 	}
 
 	hit.position = intersection;
-	hit.normal = (intersection).normalized();
+	hit.normal = Vector(2*intersection[0], -2*(intersection[1] - h), 2* intersection[2]).normalized();
 	hit.depth = t1;
 
 	return true;

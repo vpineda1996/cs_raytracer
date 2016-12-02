@@ -549,6 +549,24 @@ public:
 		return result;
 	}
 
+	Matrix operator*(double const &factor) const
+	{
+		Matrix result;
+		for (int r = 0; r < 4; r++) {
+			result[r] = factor * data[r];
+		}
+		return result;
+	}
+
+	Matrix operator-(Matrix const &other) const
+	{
+		Matrix result;
+		for (int r = 0; r < 4; r++) {
+			result[r] =  data[r] - other[r];
+		}
+		return result;
+	}
+
     // In-place matrix multiplication.
     // E.g.: `a *= b` is the same as `a = a * b`.
 	void operator*=(Matrix const &other)

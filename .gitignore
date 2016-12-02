@@ -3,3 +3,4 @@
 *.png
 *.exe
 build
+.vs

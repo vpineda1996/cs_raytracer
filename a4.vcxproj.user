@@ -4,4 +4,8 @@
     <LocalDebuggerCommandArguments>C:\Users\Victor\Downloads\a4\scenes\basic.ray</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LocalDebuggerCommandArguments>C:\Users\Victor\Downloads\a4\scenes\basic.ray</LocalDebuggerCommandArguments>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
 </Project>
