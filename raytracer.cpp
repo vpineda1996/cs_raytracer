@@ -10,7 +10,6 @@
 #include <algorithm>
 #include <iostream>
 #include <sstream>
-#include <random> 
 #include "raytracer.hpp"
 #include "image.hpp"
 #include <omp.h>
@@ -175,28 +174,6 @@ bool Raytracer::trace(Ray const &ray, int &ray_depth, Scene const &scene, Vector
     return false; 
 }
 
-void createCoordinateSystem(const Vector &N, Vector &Nt, Vector &Nb)
-{
-	if (std::fabs(N[0]) > std::fabs(N[1]))
-		Nt = Vector(N[2], 0, -N[0]) / sqrtf(N[0] * N[0] + N[2] * N[2]);
-	else
-		Nt = Vector(0, -N[2], N[1]) / sqrtf(N[1] * N[1] + N[2] * N[2]);
-	Nb = N.cross(Nt);
-}
-
-Vector uniformSampleHemisphere(const float &r1, const float &r2)
-{
-	// cos(theta) = u1 = y
-	// cos^2(theta) + sin^2(theta) = 1 -> sin(theta) = srtf(1 - cos^2(theta))
-	float sinTheta = sqrtf(1 - r1 * r1);
-	float phi = 2 * PI * r2;
-	float x = sinTheta * cosf(phi);
-	float z = sinTheta * sinf(phi);
-	return Vector(x, r1, z);
-}
-
-std::default_random_engine generator;
-std::uniform_real_distribution<float> distribution(0, 1);
 
 Vector Raytracer::shade(Ray const &ray, int &ray_depth, Intersection const &intersection, Material const &material, Scene const &scene)
 {
@@ -212,7 +189,6 @@ Vector Raytracer::shade(Ray const &ray, int &ray_depth, Intersection const &inte
 	Vector diffuse(0);
 	Vector ambient(0);
 	Vector specular(0);
-	Vector indirectLigthing(0);
 	Vector normNormalized = Vector(intersection.normal).normalized();
 	Vector intesectionPosition = Vector(intersection.position);
 
@@ -261,32 +237,8 @@ Vector Raytracer::shade(Ray const &ray, int &ray_depth, Intersection const &inte
 		diffuse += tmpDiff * 1 / att;
 		specular += tmpSpec * 1 / att;
 		ambient += Vector(material.ambient) * lightIter->ambient;
-		
-		if(ray_depth < MAX_RAY_RECURSION){
-			uint32_t N = 20; // / (depth + 1); 
-			Vector Nt, Nb, hitNormal = Vector(intersection.normal);
-			createCoordinateSystem(hitNormal, Nt, Nb);
-			float pdf = 1 / (2 * PI);
-			for (uint32_t n = 0; n < N; ++n) {
-				float r1 = distribution(generator);
-				float r2 = distribution(generator);
-				Vector sample = uniformSampleHemisphere(r1, r2);
-				Vector sampleWorld(
-					sample[0] * Nb[0] + sample[1] * hitNormal[0] + sample[2] * Nt[0],
-					sample[0] * Nb[1] + sample[1] * hitNormal[1] + sample[2] * Nt[1],
-					sample[0] * Nb[2] + sample[1] * hitNormal[2] + sample[2] * Nt[2]);
-				// don't forget to divide by PDF and multiply by cos(theta)
-				Ray newWorldRay = Ray(intersection.position + sampleWorld * EPSILON, sampleWorld);
-				Vector newColor(0);
-				int newRayDepth = ray_depth + 1;
-				double maxDepth = 1e10;
-				indirectLigthing += r1 * trace(newWorldRay, newRayDepth, scene, newColor, maxDepth) / pdf;
-			}
-			// divide by N
-			indirectLigthing = 1 / ((float)N) * indirectLigthing * material.diffuse;
-		}
 	}
-	/*
+
 	Vector reflectedLight(0);
 	if ((!(ABS_FLOAT(material.reflect) < 1e-6)) && (ray_depth < MAX_RAY_RECURSION))
 	{
@@ -306,8 +258,4 @@ Vector Raytracer::shade(Ray const &ray, int &ray_depth, Intersection const &inte
 	// !!!! edited line starts
 	return material.emission + ambient + diffuse + specular + material.reflect * reflectedLight;  
 	// !!!! edited line ends
-
-	*/
-
-	return (material.emission + ambient + diffuse + specular) / PI + 2 * indirectLigthing;
 }
