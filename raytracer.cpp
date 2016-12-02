@@ -263,7 +263,7 @@ Vector Raytracer::shade(Ray const &ray, int &ray_depth, Intersection const &inte
 		ambient += Vector(material.ambient) * lightIter->ambient;
 		
 		if(ray_depth < MAX_RAY_RECURSION){
-			uint32_t N = 124; // / (depth + 1); 
+			uint32_t N = 20; // / (depth + 1); 
 			Vector Nt, Nb, hitNormal = Vector(intersection.normal);
 			createCoordinateSystem(hitNormal, Nt, Nb);
 			float pdf = 1 / (2 * PI);
