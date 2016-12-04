@@ -18,6 +18,7 @@
 
 #define EPSILON 1e-6
 #define ANTIALIASRES 8
+#define SOFTLIGHTRES 8
 
 void Raytracer::render(const char *filename, const char *depth_filename, Scene const &scene)
 {
@@ -215,11 +216,34 @@ Vector Raytracer::shade(Ray const &ray, int &ray_depth, Intersection const &inte
 		double powDotFactor = std::pow(dotFactor, material.shininess);
 		Vector tmpSpec = Vector(material.specular) * lightIter->specular * powDotFactor;
 		
-		
-		Ray shadeRay = Ray(intersection.position - ray.direction*EPSILON, vecToLight);
+
+		double shade_factor = 1;
+		double distToLight = (lightPos - intesectionPosition).length();
+
+		for (int x = 0; x < SOFTLIGHTRES; x++) for (int y = 0; y < SOFTLIGHTRES; y++)
+		{
+
+			Ray shadeRay = Ray(intersection.position - ray.direction*EPSILON, (Vector(x , 0, y) + Vector(lightPos - intesectionPosition)).normalized() );
+			Intersection shadInter;
+
+			shadInter.depth = distToLight;
+
+			for (int i = 0; i < scene.objects.size(); i++) {
+				const Object *obj = scene.objects[i];
+
+				if (obj->intersect(shadeRay, shadInter)) {
+					shade_factor -= 1.0f / (SOFTLIGHTRES * SOFTLIGHTRES);
+				}
+			}
+			
+		}
+		tmpDiff = tmpDiff * shade_factor; //(1. - material.shadow);
+		tmpSpec = tmpSpec * shade_factor; //(1. - material.shadow);
+
+
+		/*Ray shadeRay = Ray(intersection.position - ray.direction*EPSILON, vecToLight);
 		double distToLight = (lightPos - intesectionPosition).length();
 		Intersection shadInter;
-		bool hasIntersected = false;
 		
 		shadInter.depth = distToLight;
 		
@@ -230,7 +254,7 @@ Vector Raytracer::shade(Ray const &ray, int &ray_depth, Intersection const &inte
 				tmpDiff = tmpDiff * (1. - material.shadow);
 				tmpSpec = tmpSpec * (1. - material.shadow);
 			}
-		}
+		}*/
 
 		double att = lightIter->attenuation[0] + lightIter->attenuation[1] * (distToLight) + lightIter->attenuation[2] * (distToLight) * (distToLight);
 
