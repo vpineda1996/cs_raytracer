@@ -192,6 +192,7 @@ Vector Raytracer::shade(Ray const &ray, int &ray_depth, Intersection const &inte
 	Vector specular(0);
 	Vector normNormalized = Vector(intersection.normal).normalized();
 	Vector intesectionPosition = Vector(intersection.position);
+	int objectInScene = scene.objects.size();
 
 	for (auto lightIter = scene.lights.begin(); lightIter != scene.lights.end(); lightIter++)
 	{
@@ -216,45 +217,31 @@ Vector Raytracer::shade(Ray const &ray, int &ray_depth, Intersection const &inte
 		double powDotFactor = std::pow(dotFactor, material.shininess);
 		Vector tmpSpec = Vector(material.specular) * lightIter->specular * powDotFactor;
 		
-
-		double shade_factor = 1;
+		Vector shadeRayDir = intersection.position - ray.direction*EPSILON;
+		Vector lightDir = lightPos - intesectionPosition;
+		double shade_factor = 1, shade_acc = 0;
 		double distToLight = (lightPos - intesectionPosition).length();
 
 		for (int x = 0; x < SOFTLIGHTRES; x++) for (int y = 0; y < SOFTLIGHTRES; y++)
 		{
 
-			Ray shadeRay = Ray(intersection.position - ray.direction*EPSILON, (Vector(x , 0, y) + Vector(lightPos - intesectionPosition)).normalized() );
+			Ray shadeRay = Ray(shadeRayDir, (Vector(x , 0, y) + lightDir).normalized() );
 			Intersection shadInter;
 
 			shadInter.depth = distToLight;
 
-			for (int i = 0; i < scene.objects.size(); i++) {
+			for (int i = 0; i < objectInScene; i++) {
 				const Object *obj = scene.objects[i];
 
 				if (obj->intersect(shadeRay, shadInter)) {
-					shade_factor -= 1.0f / (SOFTLIGHTRES * SOFTLIGHTRES);
+					shade_acc += 1.0f;
 				}
 			}
 			
 		}
-		tmpDiff = tmpDiff * shade_factor; //(1. - material.shadow);
-		tmpSpec = tmpSpec * shade_factor; //(1. - material.shadow);
-
-
-		/*Ray shadeRay = Ray(intersection.position - ray.direction*EPSILON, vecToLight);
-		double distToLight = (lightPos - intesectionPosition).length();
-		Intersection shadInter;
-		
-		shadInter.depth = distToLight;
-		
-		for (int i = 0; i < scene.objects.size(); i++) {
-			const Object *obj = scene.objects[i];
-
-			if (obj->intersect(shadeRay, shadInter)) {
-				tmpDiff = tmpDiff * (1. - material.shadow);
-				tmpSpec = tmpSpec * (1. - material.shadow);
-			}
-		}*/
+		shade_factor -= shade_acc / (SOFTLIGHTRES * SOFTLIGHTRES);
+		tmpDiff = tmpDiff * shade_factor; 
+		tmpSpec = tmpSpec * shade_factor; 
 
 		double att = lightIter->attenuation[0] + lightIter->attenuation[1] * (distToLight) + lightIter->attenuation[2] * (distToLight) * (distToLight);
 
