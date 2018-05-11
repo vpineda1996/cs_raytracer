@@ -5,6 +5,7 @@
 #include <iostream>
 #include <cmath>
 #include <cfloat>
+#include <Eigen/Dense>
 
 #ifndef PI
 #define PI 3.14159265358979323846
@@ -23,60 +24,62 @@ static double deg2rad(double deg) {
 	return deg * 2 * PI / 360.0;
 };
 
-
+using Eigen::Vector3d;
 // A class to represent and perform basic math operations on homogeneous
 // coordinates, RGB colors, etc..
 class Vector 
 {
 private:
-    double data[4];
+	Vector3d data;
+    double w;
 
 public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     // Direct and copy constructors.
-    Vector(double x=0.0, double y=0.0, double z=0.0, double w=0.0)
+    Vector(double x=0.0, double y=0.0, double z=0.0, double w=0.0) : w(w)
 	{
 		data[0] = x;
 		data[1] = y;
 		data[2] = z;
-		data[3] = w;
 	}
 	Vector(std::vector<double> const &vec)
 	{
-		for (size_t i = 0; i < 4; i++) {
+		for (size_t i = 0; i < 3; i++) {
 			data[i] = vec.size() > i ? vec[i] : 0;
 		}
+		if (vec.size() > 3) w = vec[3];
 	}
+
+
+	Vector(Vector3d const &other, double w = 0.0) : data(other), w(w) {}
+
 	Vector(Vector const &other)
 	{
-		for (int i = 0; i < 4; i++) {
-			data[i] = other.data[i];
-		}
+		data = other.data;
+		w = other.w;
 	}
     
     // Prints a vector like "(x,y,z,w)", without a newline.
 	void print() const
 	{
 		std::cout << '(';
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < 3; i++) {
 			std::cout << (i ? "," : "") << data[i];
 		}
+		std::cout << "," << w;
 		std::cout << ')';
 	}
     
     // Indexing operators. Allows for getting and setting components via
     // array syntax.
-    const double& operator[](int index) const { return data[index]; }
-    double& operator[](int index) { return data[index]; }
+    const double& operator[](int index) const { return index != 3 ? data[index] : w; }
+    double& operator[](int index) { return index != 3 ? data[index] : w; }
     
     // Scalar multiplication of all components.
     // E.g.: `Vector b = a * k` where a is a Vector, and k is a double.
 	Vector operator*(double value) const
 	{
-		Vector result;
-		for (int i = 0; i < 4; i++) {
-			result[i] = data[i] * value;
-		}
-		return result;
+		return Vector(value * data, value * w);
 	}
 	friend Vector operator*(double scale, const Vector& vec)
 	{
@@ -87,27 +90,19 @@ public:
     // E.g.: `Vector b = a / k` where a is a Vector, and k is a double.
 	Vector operator/(double value) const
 	{
-		Vector result;
-		for (int i = 0; i < 4; i++) {
-			result[i] = data[i] / value;
-		}
-		return result;
+		return Vector(data / value, w / value);
 	}
 
     // Component-wise multiplation of two vectors.
     // E.g.: `Vector c = a * b` performs `c[i] = a[i] * b[i]`.
 	Vector operator*(Vector const &other) const
 	{
-		Vector result;
-		for (int i = 0; i < 4; i++) {
-			result[i] = data[i] * other.data[i];
-		}
-		return result;
+		return Vector(other.data.cwiseProduct(data), other.w * w);
 	}
 
 	const Vector operator-(void) const
 	{
-		return Vector(-data[0], -data[1], -data[2], data[3]);
+		return Vector(-data, w);
 	}
 
 	bool operator!=(const Vector& rhs) const
@@ -142,35 +137,17 @@ public:
     // Length and squared length of the represented coordinate.
 	double length() const
 	{
-		double sum = 0;
-		// Ignoring W.
-		for (int i = 0; i < 3; i++) {
-			sum += data[i] * data[i];
-		}
-		return sqrt(sum);
+		return data.norm();
 	}
 	double length2() const
 	{
-		double sum = 0;
-		// Ignoring W.
-		for (int i = 0; i < 3; i++) {
-			sum += data[i] * data[i];
-		}
-		return sum;
+		return data.dot(data);
 	}
 
     // Normalize represented coordinate (scale to length 1) in place; modifies the vector.
 	void normalize()
 	{
-		double len = length();
-		// Ignoring W.
-
-		if (!(ABS_FLOAT(len - 1.0) < 1e-6))
-		{
-			for (int i = 0; i < 3; i++) {
-				data[i] /= len;
-			}
-		}
+		data.normalize();
 	}
 
     // Get a normalized copy of the represented coordinate.
@@ -184,21 +161,14 @@ public:
     // Addition and subtraction of represented coordinates.
 	Vector operator+(Vector const &other) const
 	{
-		Vector result;
 		// Ignoring W.
-		for (int i = 0; i < 3; i++) {
-			result[i] = data[i] + other.data[i];
-		}
-		return result;
+		return Vector(other.data + data);
 	}
 	Vector operator-(Vector const &other) const
 	{
 		Vector result;
 		// Ignoring W.
-		for (int i = 0; i < 3; i++) {
-			result[i] = data[i] - other.data[i];
-		}
-		return result;
+		return Vector(data - other.data);
 	}
 
 	const Vector& operator+=(const Vector& rhs)
@@ -212,11 +182,9 @@ public:
     // E.g.: `Vector c = a.dot(b)` for `c = a . b`.
 	double dot(Vector const &other, bool homogeneous = false) const
 	{
-		double result = 0;
+		double result = data.dot(other.data);
 		// Ignoring W.
-		for (int i = 0; i < (homogeneous ? 4 : 3); i++) {
-			result += data[i] * other.data[i];
-		}
+		if (homogeneous) result += w * other.w;
 		return result;
 	}
 
@@ -224,12 +192,7 @@ public:
     // E.g.: `Vector c = a.cross(b)` for `c = a x b`. 
 	Vector cross(Vector const &other, double w = 1.0) const
 	{
-		return Vector(
-			data[1] * other.data[2] - other.data[1] * data[2],
-			-data[0] * other.data[2] + other.data[0] * data[2],
-			data[0] * other.data[1] - other.data[0] * data[1],
-			w
-			);
+		return Vector(data.cross(other.data), w);
 	}
 };
 

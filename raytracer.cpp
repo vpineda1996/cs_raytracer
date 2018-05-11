@@ -17,8 +17,8 @@
 // 2016 Version
 
 #define EPSILON 1e-6
-#define ANTIALIASRES 8
-#define SOFTLIGHTRES 8
+#define ANTIALIASRES 10
+#define SOFTLIGHTRES 10
 
 void Raytracer::render(const char *filename, const char *depth_filename, Scene const &scene)
 {
