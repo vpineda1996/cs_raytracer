@@ -85,6 +85,12 @@ public:
 	{
 		return vec * scale;
 	}
+
+	friend Vector operator*(Eigen::Matrix4d const &value, const Vector& vec)
+	{
+		Eigen::Vector4d d = value * Eigen::Vector4d(vec[0], vec[1], vec[2], vec[3]);
+		return Vector(d(0), d(1), d(2), d(3));
+	}
     
     // Scalar division of all components.
     // E.g.: `Vector b = a / k` where a is a Vector, and k is a double.
@@ -180,12 +186,18 @@ public:
     // Dot product of two vectors. Optional flag indicates if we should
     // be including the 4th coordinate.
     // E.g.: `Vector c = a.dot(b)` for `c = a . b`.
-	double dot(Vector const &other, bool homogeneous = false) const
+	double dot(Vector const &other, bool homogeneous) const
 	{
 		double result = data.dot(other.data);
 		// Ignoring W.
 		if (homogeneous) result += w * other.w;
 		return result;
+	}
+
+	// Ignoring W.
+	inline double dot(Vector const &other) const
+	{
+		return data.dot(other.data);
 	}
 
     // Cross product of two vectors.

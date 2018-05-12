@@ -18,7 +18,7 @@ bool Object::intersect(Ray ray, Intersection &hit) const
     ray.direction[3] = 0;
 	
 
-    Ray localRay(i_transform * ray.origin, i_transform * ray.direction);
+    Ray localRay(i_transform_fast * ray.origin, i_transform_fast * ray.direction);
 	//!!! USEFUL NOTES: to calculate depth in localIntersect(), if the intersection happens at
 	//ray.origin + ray.direction * t, then t is just the depth
 	//!!! USEFUL NOTES: Here direction might be scaled, so you must not renormalize it in
@@ -124,7 +124,7 @@ bool Plane::localIntersect(Ray const &ray, Intersection &hit) const
 	return true;
 }
 
-bool Mesh::intersectTriangle(Ray const &ray, Triangle const &tri, Intersection &hit) const
+inline bool Mesh::intersectTriangle(Ray const &ray, Triangle const &tri, Intersection &hit) const
 {
 	// Extract vertex positions from the mesh data.
 	Vector const &p0 = positions[tri[0].pi];
@@ -267,7 +267,8 @@ bool Mesh::localIntersect(Ray const &ray, Intersection &hit) const
 
 	// The ray hits the bounding box, so check each triangle.
 	bool isHit = false;
-	for (size_t tri_i = 0; tri_i < triangles.size(); tri_i++) {
+	int numTriang = triangles.size();
+	for (size_t tri_i = 0; tri_i < numTriang; tri_i++) {
 		Triangle const &tri = triangles[tri_i];
 
 		if (intersectTriangle(ray, tri, hit)) {

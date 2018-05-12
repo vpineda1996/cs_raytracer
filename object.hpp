@@ -64,8 +64,10 @@ public:
 class Object 
 {
 public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     Matrix transform;   // Transformation from global to object space.
     Matrix i_transform; // Transformation from object to global space.
+	Eigen::Matrix4d i_transform_fast;
     Matrix n_transform; // Trasnformation to global space for normals.
 
     // Sets up the 3 transformations from the given global-to-object transform.
@@ -73,6 +75,11 @@ public:
 	{
 		transform = m;
 		m.invert(i_transform);
+		i_transform_fast << i_transform(0,0), i_transform(0, 1), i_transform(0, 2), i_transform(0, 3),
+						   i_transform(1, 0), i_transform(1, 1), i_transform(1, 2), i_transform(1, 3),
+						   i_transform(2, 0), i_transform(2, 1), i_transform(2, 2), i_transform(2, 3),
+						   i_transform(3, 0), i_transform(3, 1), i_transform(3, 2), i_transform(3, 3);
+
 		n_transform = i_transform.transpose();
 	}
 
@@ -331,7 +338,7 @@ private:
 	// Find the intersection point between the given ray and mesh triangle.
 	// Return true iff an intersection exists, and fill the hit data
 	// structure with information about it.
-	bool intersectTriangle(Ray const &ray,
+	inline bool intersectTriangle(Ray const &ray,
 		Triangle const &tri,
 		Intersection &hit) const;
 };
